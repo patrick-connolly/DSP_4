@@ -27,7 +27,7 @@ fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
 ax1.plot(t, x)
 ax1.set_xlabel("Time (s)")
 ax1.set_ylabel("Normalised amplitude")
-ax1.set_xlim(0, 0.005)          # zoom to 5 ms so the sine is visible
+ax1.set_xlim(0, 0.005)          #!!!mind remove for real recording # a zoom to 5 ms so the sine is visible
 ax2.plot(f, XdB)
 ax2.set_xscale("log")
 ax2.set_xlabel("Frequency (Hz)")
