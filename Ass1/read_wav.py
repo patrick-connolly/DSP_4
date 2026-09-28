@@ -3,9 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 
+#file input
 filename = sys.argv[1] if len(sys.argv) > 1 else 'tone_1kHz.wav'
 fs, x = wavfile.read(filename)
 
+
+#fills array  
 if x.ndim > 1:
     x = x[:, 0]  # Use only the first channel if stereo
 x = x / np.max(np.abs(x))  # Normalize the signal
