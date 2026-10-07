@@ -17,6 +17,7 @@ class AudioSignal:
         self.fs = fs
         self.x = x
         self.N = len(x)
+        
 
     def duration(self):
         return self.N / self.fs
@@ -47,19 +48,20 @@ class AudioSignal:
         ax2.plot(f, XdB)
         ax2.set_xscale("log")
         ax2.set_xlabel("Frequency (Hz)")
-        ax2.set_ylabel("Amplitude (dB)")
+        ax2.set_ylabel("Amplitude (dB) relative to peak")
         ax2.set_ylim(-120, 5)
         fig.tight_layout()
         return fig
 
-    def __repr__(self):
+    def __repr__(self): #fall back if not printing  
         return f"AudioSignal(fs={self.fs} Hz, N={self.N}, duration={self.duration():.2f} s)"
 
 
 if __name__ == "__main__":
-    filename = "Testingtestingtesting.wav"
+    filename = "Zabi_5cm.wav"
     sig = AudioSignal(filename)
     print(sig)
-    fig = sig.plot(zoom=0.005)  # zoom to 5 ms so the sine is visible; remove for real recordings
-    #fig.savefig("tone_1khz.pdf")
+    fig = sig.plot()
+    #fig.savefig(filename.replace(".wav", ".pdf"))  # e.g. Zabi_5cm.pdf (vector format)
     plt.show()
+    
