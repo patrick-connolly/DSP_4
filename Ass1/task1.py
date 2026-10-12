@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 from audio import AudioSignal
 
-# Regions chosen by eye from each spectrum (no automatic detection)
+# Regions chosen
 marks = {
-    "Zabi_5cm.wav": {"vowels": [100, 108, 115, 123], "consonants": (2000, 11000), "noise": (12000, 22050)},
-    "Zabi_1m.wav":  {"vowels": [97, 105, 115],        "consonants": (2000, 10000), "noise": (11000, 22050)},
+    "Zabi_5cm.wav": {"vowels": [95.3, 102, 108, 122], "consonants": (2000, 20000), "noise": [(20, 80), (20500, 22050)]},
+    "Zabi_1m.wav":  {"vowels": [90, 98, 106.3, 114],  "consonants": (2000, 20000), "noise": [(20, 80), (20500, 22050)]},
 }
 
 for filename, m in marks.items():
@@ -12,9 +12,11 @@ for filename, m in marks.items():
     print(sig)
     fig = sig.plot()
     ax = fig.axes[1]  # frequency plot
+    ax.set_xlim(20, sig.fs / 2)  # audible range up to Nyquist
     ax.vlines(m["vowels"], -120, 5, colors="r", linestyles="--", label="Vowel fundamentals")
     ax.axvspan(*m["consonants"], color="g", alpha=0.2, label="Consonants")
-    ax.axvspan(*m["noise"], color="grey", alpha=0.3, label="Noise")
+    for i, band in enumerate(m["noise"]):
+        ax.axvspan(*band, color="grey", alpha=0.4, label="Noise" if i == 0 else None)
     ax.legend(loc="lower left")
     #fig.savefig(filename.replace(".wav", ".pdf"))  # vector format for the report
 

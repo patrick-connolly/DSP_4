@@ -16,9 +16,8 @@ class AudioSignal:
         self.fs = fs
         self.x = x
         self.N = len(x)
-        print(x)
         
-
+        
     def duration(self):
         return self.N / self.fs
 
@@ -44,8 +43,6 @@ class AudioSignal:
         ax1.plot(t, self.x)
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Normalised amplitude")
-        if zoom is not None:
-            ax1.set_xlim(0, zoom)
         ax2.plot(f, XdB)
         ax2.set_xscale("log")
         ax2.set_xlabel("Frequency (Hz)")
