@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
@@ -17,6 +16,7 @@ class AudioSignal:
         self.fs = fs
         self.x = x
         self.N = len(x)
+        print(x)
         
 
     def duration(self):
@@ -40,6 +40,7 @@ class AudioSignal:
         t = self.time_axis()
         f, XdB = self.fft()
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+        fig.suptitle(f"Audio Signal: {self.filename}\nSample rate: {self.fs} Hz, Duration: {self.duration():.2f} s")
         ax1.plot(t, self.x)
         ax1.set_xlabel("Time (s)")
         ax1.set_ylabel("Normalised amplitude")
@@ -52,12 +53,13 @@ class AudioSignal:
         ax2.set_ylim(-120, 5)
         fig.tight_layout()
         return fig
+        
 
-    def __repr__(self): #fall back if not printing  
+    def __repr__(self): #text for print(sig)  
         return f"AudioSignal(fs={self.fs} Hz, N={self.N}, duration={self.duration():.2f} s)"
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": #only runs when excuted directly for testing
     filename = "Zabi_5cm.wav"
     sig = AudioSignal(filename)
     print(sig)
