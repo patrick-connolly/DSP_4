@@ -8,8 +8,9 @@ for filename in filenames:
     fs, x = wavfile.read(filename)
     x = x[:, 0]  # stereo file, both channels are the same
     x = x / np.max(np.abs(x))  # normalise to +-1
+    x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband
     N = len(x)
-
+   
     #fft
     X = np.fft.fft(x)
 
@@ -23,13 +24,16 @@ for filename in filenames:
     # remove everything below 80 Hz (rumble, and pops for the 5cm one)
     Y[f < 80] = 0
 
+    # removes upper noise margin identified in task 1, above 20.5 kHz
+    Y[f > 20500] = 0
+
     # boost bass for 1m only because bass is lost with distance
     # 5cm already has loads of bass (proximity effect)
     if filename == "Zabi_1m.wav":
         Y[(f >= 100) & (f < 300)] *= 2  # x2 is about +6 dB
 
-    # boost 2-5 kHz to make the voice clearer
-    Y[(f >= 2000) & (f < 5000)] *= 1.6  # x1.6 is about +4 dB
+    # boost 2-5 kHz to make the voice clearer #patrick review, adds ring due to steep gain change
+    #Y[(f >= 2000) & (f < 5000)] *= 1.3  # x1.6 is about +4 dB
 
     #ifft back to time domain
     y = np.real(np.fft.ifft(Y))  # imaginary part is basically 0
@@ -50,12 +54,14 @@ for filename in filenames:
     ax.plot(f[1:half], dB_after, label="Enhanced", alpha=0.7)
 
     # shade the bands that were changed, grey = removed, green = boosted
-    ax.axvspan(f[1], 80, color="grey", alpha=0.15)
+    ax.axvspan(20, 80, color="grey", alpha=0.15)
+    ax.axvspan(20500, fs / 2, color="grey", alpha=0.15)
     if filename == "Zabi_1m.wav":
         ax.axvspan(100, 300, color="green", alpha=0.15)
     ax.axvspan(2000, 5000, color="green", alpha=0.15)
 
     ax.set_xscale("log")
+    ax.set_xlim(20, fs / 2)
     ax.set_ylim(-120, 5)
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Amplitude (dB) relative to peak")

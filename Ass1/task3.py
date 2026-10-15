@@ -10,6 +10,7 @@ from scipy.io import wavfile
 fs, x = wavfile.read("Zabi_5cm.wav")
 x = x[:, 0]  # stereo file, both channels are the same
 x = x / np.max(np.abs(x))  # normalise to +-1
+x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband
 N = len(x)
 
 # frequency of each bin, folded like in task 2 so both halves get changed the same
