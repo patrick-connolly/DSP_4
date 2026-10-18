@@ -1,0 +1,418 @@
+% =====================================================================
+%  DSP Assignment 1 — Fourier Transform
+%  Group report (one submission). Lives in report/ inside the repo.
+%  Figures in report/figures/ are made by the savefig lines in Ass1/task*.py
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Packages ----------
+\usepackage[margin=2.3cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage[section]{placeins}  % keeps figures inside their own section
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink]{cleveref}
+
+\graphicspath{{figures/}}
+\setlength{\parskip}{4pt}
+
+% Python listings
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue!70!black}\bfseries,
+  commentstyle=\color{green!40!black}\itshape,
+  stringstyle=\color{orange!70!black},
+  numbers=left, numberstyle=\tiny\color{gray},
+  frame=single, breaklines=true, showstringspaces=false,
+  columns=fullflexible
+}
+
+% Ramp used to build every gain curve
+\newcommand{\ramp}[2]{r_{#1,\,#2}}
+
+% ---------- Title ----------
+\title{\textbf{Digital Signal Processing}\\[4pt]
+       Assignment 1: Fourier Transform\\[2pt]
+       \large Voice Analysis, Spectral Enhancement and an Aural Exciter}
+\author{%
+  Patrick Connolly (2777107C)\\
+  Zabiallah Azar (2893681A)}
+\date{19 October 2026}
+
+% =====================================================================
+\begin{document}
+\maketitle
+
+% =====================================================================
+\section{Recordings and Method}
+\label{sec:method}
+
+Zabi spoke the same sentence twice in GarageBand, once at
+\SI{5}{\centi\metre} and once at \SI{1}{\metre} from the microphone. Both
+files are uncompressed WAV at \SI{44.1}{\kilo\hertz}, 16-bit, with identical
+left and right channels and a peak of \SI{98.9}{\percent} of full scale, so
+neither recording is clipped. The scripts keep one channel, normalise it to a
+peak of $\pm1$ and trim the digital silence that GarageBand pads onto the end
+(\SI{0.54}{\second} and \SI{0.38}{\second}).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Recording parameters after trimming.}
+  \label{tab:recording}
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    & \SI{5}{\centi\metre} & \SI{1}{\metre} \\
+    \midrule
+    Sample rate $f_s$          & \SI{44.1}{\kilo\hertz} & \SI{44.1}{\kilo\hertz} \\
+    Bit depth                  & 16-bit & 16-bit \\
+    Duration                   & \SI{2.44}{\second} & \SI{2.59}{\second} \\
+    FFT length $N$             & \num{107398} & \num{114257} \\
+    Bin spacing $f_s/N$        & \SI{0.41}{\hertz} & \SI{0.39}{\hertz} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The FFT of the whole recording is taken in one go, so the bin spacing is
+under \SI{0.5}{\hertz}, which is fine enough to separate vowel fundamentals
+a few hertz apart. Because \texttt{fftfreq} is not allowed, the frequency of
+bin $k$ is built by hand. For filtering, the upper half of the axis is
+folded back, so that the mirrored bins $k$ and $N-k$ always get the same gain
+and the inverse FFT stays real:
+\begin{equation}
+  f_k = \frac{k f_s}{N},
+  \qquad
+  \tilde f_k = \min\!\left(f_k,\; f_s - f_k\right),
+  \qquad k = 0,\dots,N-1.
+  \label{eq:bins}
+\end{equation}
+Spectra are plotted from bin 1 to $N/2$ (DC cannot go on a log axis) in
+decibels relative to the input peak, $20\log_{10}\!\left(|X[k]|/\max|X|\right)$.
+
+Every filter in Tasks 2 and 3 is a real gain $G$ multiplied onto the FFT,
+followed by an IFFT. Each gain is built from a single linear ramp,
+\begin{equation}
+  \ramp{f_0}{f_1} = \min\!\left(\max\!\left(\frac{\tilde f - f_0}{f_1 - f_0},\, 0\right),\, 1\right),
+  \label{eq:ramp}
+\end{equation}
+which is 0 below $f_0$ and 1 above $f_1$. A high-pass is $\ramp{f_0}{f_1}$, a
+low-pass is $1-\ramp{f_0}{f_1}$, and a band-pass is the product of the two. Our
+first Task 2 attempt used hard brick-wall edges, and the 2--5\,kHz boost made
+the voice audibly ring. Replacing every edge with a ramp shortened the impulse
+response of the gain and removed the ringing, so ramps are used throughout.
+
+% =====================================================================
+\section{Task 1: Signal Analysis}
+\label{sec:task1}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\linewidth]{Zabi_5cm.pdf}
+  \caption{\SI{5}{\centi\metre} recording: normalised waveform (top) and
+           spectrum (bottom) with vowel fundamentals (red), consonant range
+           (green) and noise regions (grey) marked.}
+  \label{fig:t1_5cm}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\linewidth]{Zabi_1m.pdf}
+  \caption{\SI{1}{\metre} recording, marked in the same way as
+           \cref{fig:t1_5cm}.}
+  \label{fig:t1_1m}
+\end{figure}
+
+\paragraph{Time domain.}
+The \SI{5}{\centi\metre} waveform (\cref{fig:t1_5cm}) has clearly separated
+syllables with near-silent gaps between them. At \SI{1}{\metre}
+(\cref{fig:t1_1m}) the gaps are filled in. The silent lead-in before the
+speech sits at \SI{-41.6}{\decibel} relative to the peak at
+\SI{5}{\centi\metre} but at \SI{-25.3}{\decibel} at \SI{1}{\metre}. Once both
+files are normalised, the room noise is therefore about \SI{16}{\decibel}
+louder relative to the voice at the larger distance.
+
+\paragraph{Vowel fundamentals.}
+Vowels are voiced, so each one produces a strong peak at the speaker's
+fundamental, with its harmonics at integer multiples above it. Zabi has a male
+speaking voice, so we looked for the first strong peaks above the noise region
+in the region of \SIrange{85}{155}{\hertz}. At \SI{5}{\centi\metre} we marked
+six peaks (\SIlist{88.7;95.3;100.6;104.7;108;122.5}{\hertz}). Each vowel is
+spoken at a slightly different pitch, which is why they appear as separate
+peaks rather than one. At \SI{1}{\metre} only four could be picked out
+(\SIlist{89.2;98;107.7;114}{\hertz}). The two recordings are separate takes,
+so the pitch of each vowel is slightly different, and at \SI{1}{\metre} the room
+rumble in the same range fills the gaps between neighbouring peaks, so some of
+them can no longer be told apart.
+
+\paragraph{Consonants.}
+Fricatives and plosives such as ``s'', ``f'' and ``t'' are bursts of turbulent
+air with no fundamental, so their energy sits high in the spectrum where the
+vowel harmonics have died away. Above about \SI{3}{\kilo\hertz} the spectrum
+stops showing a regular harmonic comb and turns into a broad, noise-like
+plateau, so we start the consonant range there. It extends up to
+\SI{20}{\kilo\hertz}. The hump at \SIrange{17}{20}{\kilo\hertz} is still
+\SIrange{16}{24}{\decibel} above the silent lead-in, so it is speech, and above
+\SI{20}{\kilo\hertz} the spectrum falls off steeply. Both recordings use the
+same range because it is the same speaker and sentence.
+
+\paragraph{Noise.}
+Two regions most likely contain only noise. Below \SI{80}{\hertz} is under
+the lowest vowel fundamental, so it cannot be voice. It holds room rumble and,
+in the \SI{5}{\centi\metre} recording, the low-frequency thumps of ``p'' and
+``b'' pops. Above \SI{20.5}{\kilo\hertz} is beyond human hearing and inside the
+recorder's anti-aliasing roll-off, so it carries no useful speech.
+
+% =====================================================================
+\section{Task 2: Spectral Enhancement}
+\label{sec:task2}
+
+Each recording is enhanced with a single gain curve $G$ built from
+\cref{eq:ramp}:
+\begin{equation}
+  Y[k] = G[k]\,X[k],
+  \qquad
+  y[n] = \operatorname{Re}\!\left\{\mathrm{IFFT}\{Y[k]\}\right\},
+  \label{eq:filter}
+\end{equation}
+\begin{equation}
+  G =
+  \underbrace{\ramp{60}{80}\,\bigl(1-\ramp{20000}{20500}\bigr)}_{\text{noise cuts}}
+  \;\underbrace{\bigl(1 + 0.3\,\ramp{1500}{2000}\,(1-\ramp{5000}{6000})\bigr)}_{\text{presence, both files}}
+  \;\underbrace{\bigl(1 + 0.4\,(1-\ramp{120}{150})\bigr)}_{\text{bass, \SI{1}{\metre} only}}
+  \label{eq:gain}
+\end{equation}
+The output is renormalised to a peak of 1 and saved as a 32-bit float WAV.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Changes made to each recording in Task 2.}
+  \label{tab:task2}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    Change & Band & Applied to & Reason \\
+    \midrule
+    Cut              & below \SI{80}{\hertz}          & both & rumble, and pops at \SI{5}{\centi\metre} \\
+    Cut              & above \SI{20.5}{\kilo\hertz}   & both & noise region from Task 1 \\
+    $\times1.3$ (\SI{+2.3}{\decibel}) & \SIrange{2}{5}{\kilo\hertz} & both & presence and intelligibility \\
+    $\times1.4$ (\SI{+2.9}{\decibel}) & \SIrange{80}{120}{\hertz}   & \SI{1}{\metre} only & restore vowel fundamentals \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{\SI{5}{\centi\metre}: pops.}
+The risk at close range is plosive pops. The air blast from ``p'' and ``b''
+hits the microphone and produces thumps below \SI{80}{\hertz}. The close
+recording also already has a strong low end, so no bass is added. Cutting
+below \SI{80}{\hertz} removes the pops without touching the voice, since the
+lowest fundamental is \SI{88.7}{\hertz}. The ramp starts at \SI{60}{\hertz},
+so the cut is fully in place before the voice begins.
+
+\paragraph{\SI{1}{\metre}: room noise and lost bass.}
+At \SI{1}{\metre} the voice is quieter relative to the room, and the direct
+bass of the voice is weaker. However, the low end of the \SI{1}{\metre}
+spectrum is not actually lower than at \SI{5}{\centi\metre}, because room noise
+fills it in. \SI{81}{\percent} of the energy in the silent lead-in lies below
+\SI{200}{\hertz}. That noise overlaps the vowel fundamentals, so only the part
+below \SI{80}{\hertz} can be removed. Boosting the whole bass region would
+mostly boost noise. The bass boost is therefore limited to the band below
+\SI{120}{\hertz}, where the vowel fundamentals are strongest compared with the
+noise, and it fades back to unity by \SI{150}{\hertz}. Our first version
+boosted \SIrange{100}{300}{\hertz} by $\times2$, but it missed two of the four
+fundamentals and made the silent parts noisier, so it was replaced.
+
+\paragraph{Clarity.}
+The \SIrange{2}{5}{\kilo\hertz} region holds the consonant detail that makes
+speech intelligible and gives radio voices their ``presence''. It is lifted by
+a modest \SI{2.3}{\decibel} in both recordings.
+\Cref{fig:t2_5cm,fig:t2_1m} show the spectra before and after.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{Zabi_5cm_task2.pdf}
+  \caption{\SI{5}{\centi\metre} recording before and after enhancement. Both
+           curves use the original peak as \SI{0}{\decibel}.}
+  \label{fig:t2_5cm}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{Zabi_1m_task2.pdf}
+  \caption{\SI{1}{\metre} recording before and after enhancement, with the
+           extra \SIrange{80}{120}{\hertz} boost.}
+  \label{fig:t2_1m}
+\end{figure}
+
+% =====================================================================
+\section{Task 3: Aural Exciter}
+\label{sec:task3}
+
+We based our exciter on the Aphex block diagram from the brief and applied it
+to the \SI{5}{\centi\metre} recording, after first removing the pops and the
+noise above \SI{20.5}{\kilo\hertz} with the same cuts as Task 2. The
+\SIrange{2}{5}{\kilo\hertz} boost is left out, because adding clarity is the
+exciter's job here. Like the diagram, the exciter has two sidechains that are
+summed with the dry voice:
+\begin{equation}
+  y[n] = x[n] + \mathrm{mix}\cdot h[n] + \mathrm{bass\_mix}\cdot b[n],
+  \label{eq:mix}
+\end{equation}
+where \texttt{mix} and \texttt{bass\_mix} are the two Mix controls in the
+diagram and have the same names in our code.
+
+\paragraph{Exciter sidechain.}
+The voice is high-passed, normalised to a peak of 1 so that \texttt{drive}
+has the same effect at any recording level, and passed through a $\tanh$
+nonlinearity:
+\begin{equation}
+  d[n] = \tanh\!\left(\mathrm{drive}\cdot\frac{x_{\mathrm{hp}}[n]}{\max|x_{\mathrm{hp}}|}\right),
+  \qquad
+  h[n] = \frac{\mathrm{IFFT}\{B[k]\,D[k]\}}{\max\left|\mathrm{IFFT}\{B[k]\,D[k]\}\right|}.
+  \label{eq:nonlin}
+\end{equation}
+Because $\tanh$ is odd, a single tone gains only odd harmonics. Speech contains
+many frequencies at once, though, so $\tanh$ also creates sum and difference
+frequencies that can land anywhere in the spectrum. The band-pass $B[k]$
+after the nonlinearity keeps only the harmonics we want, as the brief
+describes. Since $h[n]$ is normalised, \texttt{mix} is the peak level of the
+added signal relative to the voice.
+
+\paragraph{Big Bottom sidechain.}
+The voice below \SI{190}{\hertz} is normalised and put through
+$\tanh(3x)$. This squashes loud bass more than quiet bass, so it acts like
+the dynamics processor in the diagram and evens the bass out rather than simply
+boosting it. $\tanh$ also creates difference frequencies below
+\SI{80}{\hertz}, so the \SIrange{60}{80}{\hertz} pop cut is applied again
+afterwards.
+
+\subsection{Iterative development}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Exciter settings and the measured change in band power,
+           $10\log_{10}(P_y/P_x)$, for each version.}
+  \label{tab:exciter}
+  \begin{tabular}{@{}lcc@{}}
+    \toprule
+    & v1 (first try) & v2 (final) \\
+    \midrule
+    High-pass into $\tanh$ & \SI{800}{\hertz} & \SI{3}{\kilo\hertz} \\
+    Harmonics kept, $B[k]$ & all & \SIrange{4}{12}{\kilo\hertz} \\
+    \texttt{drive} & 5 & 5 \\
+    \texttt{mix} & 0.3 & 0.15 \\
+    \texttt{bass\_mix} & 0 & 0.1 \\
+    \midrule
+    Change at \SIrange{80}{190}{\hertz} & \SI{0}{\decibel} & \SI{+2.2}{\decibel} \\
+    Change at \SIrange{4}{10}{\kilo\hertz} & \SI{+6.7}{\decibel} & \SI{+2.8}{\decibel} \\
+    Change at \SIrange{12}{20}{\kilo\hertz} & \SI{+7.5}{\decibel} & \SI{0}{\decibel} \\
+    Overall RMS change & \SI{+2.1}{\decibel} & \SI{+0.9}{\decibel} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{v1: initial design.}
+The first version fed everything above \SI{800}{\hertz} into the $\tanh$ and
+added all of its output back at a mix of 0.3. \Cref{fig:exciter_v1} shows that
+the added signal is almost as loud as the voice itself above
+\SI{800}{\hertz}, and \cref{fig:exciter_change} shows that this lifts the
+entire upper spectrum by \SIrange{6}{9}{\decibel}. When we listened back, v1
+sounded harsh. The largest lift, \SI{7.5}{\decibel}, is at
+\SIrange{12}{20}{\kilo\hertz}, where the hissy ``s'' and ``t'' sounds sit.
+Because the $\tanh$ output was not filtered, its difference frequencies also
+put energy back below \SI{80}{\hertz}, exactly where the pops had just been
+removed (left annotation in \cref{fig:exciter_v1}).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{task3_v1.pdf}
+  \caption{What exciter v1 adds to the voice (blue), drawn over the input
+           spectrum (grey).}
+  \label{fig:exciter_v1}
+\end{figure}
+
+\paragraph{v2: changes made.}
+To fix both problems, the high-pass was moved up to \SI{3}{\kilo\hertz}, and
+only harmonics between \SI{4}{\kilo\hertz} and \SI{12}{\kilo\hertz} are kept.
+This band is centred around \SI{6}{\kilo\hertz}, where the brief says the ear
+is most sensitive, and it stops short of the sibilant region. The mix was
+halved to 0.15, and a small amount of Big Bottom bass was added to try the
+other half of the Aphex diagram. \Cref{fig:exciter_v2} shows that v2 only adds
+content in those two bands and nothing below \SI{60}{\hertz}.
+\Cref{fig:exciter_change} shows the result: a \SI{3}{\decibel} lift at
+\SIrange{4}{12}{\kilo\hertz}, about \SI{2}{\decibel} of evened-out bass, and
+no change anywhere else. The overall RMS rises by only \SI{0.9}{\decibel},
+which matches the brief's aim of a voice that is perceived as louder without
+its amplitude changing much. By ear, v2 is brighter than the input without
+the piercing quality of v1.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{task3_v2.pdf}
+  \caption{What exciter v2 adds to the voice (orange): compressed bass at
+           \SIrange{80}{190}{\hertz} and harmonics at
+           \SIrange{4}{12}{\kilo\hertz} only.}
+  \label{fig:exciter_v2}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{task3_change.pdf}
+  \caption{Change in level caused by each version, averaged over 40
+           log-spaced bands from \SI{80}{\hertz} to \SI{20}{\kilo\hertz}.}
+  \label{fig:exciter_change}
+\end{figure}
+
+\paragraph{Why v2 was kept.}
+With \texttt{drive} at 5, only about \SI{1}{\percent} of v2's samples reach
+$|\mathrm{drive}\cdot x| > 1$, where $\tanh$ starts to bend (\SI{3}{\percent}
+for v1). Most of v2's lift is therefore the existing
+\SIrange{4}{12}{\kilo\hertz} content turned up, with a smaller amount of new
+harmonics on top. We tried a third version that fed only
+\SIrange{1.5}{3}{\kilo\hertz} into the $\tanh$ with a drive of 20. Its added
+signal was almost pure harmonics, but it sounded squawky, so we rejected it by
+ear and kept v2 as the final design.
+
+% =====================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Moving from \SI{5}{\centi\metre} to \SI{1}{\metre} raised the room-noise floor
+by about \SI{16}{\decibel} relative to the voice. Most of that noise is
+below \SI{200}{\hertz}, so it overlaps the vowel fundamentals and can only be
+partly removed with FFT gains. At close range the main problem was pops below
+\SI{80}{\hertz}, which could be removed cleanly. Ramped gain edges were
+essential, because hard edges made the enhanced voice ring. For the exciter,
+limiting both the input to the nonlinearity and the harmonics kept from it was
+what turned a harsh first attempt into a usable design. The final exciter lifts
+\SIrange{4}{12}{\kilo\hertz} by about \SI{3}{\decibel} while changing the
+overall level by under \SI{1}{\decibel}.
+
+% =====================================================================
+\section*{Acknowledgement of GenAI Use}
+We used Claude (Claude Opus 5.5, Anthropic) to review our code against the
+brief, check the measurements quoted in this report, and help structure and
+word the report text. We made the recordings, wrote the initial code, chose
+the filter bands and exciter settings, and made all listening judgements
+ourselves. Any code suggestions were checked and simplified by us, and we can
+both explain every line of the submitted code.
+
+% =====================================================================
+\appendix
+\section{Python Code}
+\label{app:code}
+
+\subsection*{\texttt{task1.py}}
+\lstinputlisting{../Ass1/task1.py}
+
+\subsection*{\texttt{task2.py}}
+\lstinputlisting{../Ass1/task2.py}
+
+\subsection*{\texttt{task3.py}}
+\lstinputlisting{../Ass1/task3.py}
+
+\end{document}

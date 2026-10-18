@@ -19,7 +19,7 @@ for filename in filenames:
     fs, x = wavfile.read(filename)
     x = x[:, 0]  # stereo file, both channels are the same
     x = x / np.max(np.abs(x))  # normalise to +-1
-    x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband
+    x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband  ## "b" given in numpy doc just to cut trailing
     N = len(x)
 
     #fft
