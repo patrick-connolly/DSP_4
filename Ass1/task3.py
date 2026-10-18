@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
@@ -6,6 +7,8 @@ from scipy.io import wavfile
 # exciter part: highpass -> tanh makes harmonics -> only keep some of them -> mix back in
 # big bottom part: lowpass -> tanh squashes it like a compressor -> mix back in
 # all the filtering is done by multiplying the fft and then doing the ifft (like task 2)
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
 
 fs, x = wavfile.read("Zabi_5cm.wav")
 x = x[:, 0]  # stereo file, both channels are the same
@@ -27,10 +30,17 @@ def ramp(f0, f1):
 #fft
 X = np.fft.fft(x)
 
-# remove pops below 80 Hz first, same as task 2
-# no cut at the top because task 1 shows the consonants go up to about 20 kHz
-X = X * ramp(60, 80)
+# remove pops below 80 Hz and noise above 20.5 kHz first, same cuts as task 2
+# task 2's 2-5 kHz boost is left out, making the voice clearer is the exciter's job here
+X = X * ramp(60, 80) * (1 - ramp(20000, 20500))
 x = np.real(np.fft.ifft(X))
+
+# big bottom, lowpass then tanh squashes the loud bits like a compressor
+# tanh puts a bit back below 80 Hz, so the pop cut is done again afterwards
+# it's the same for every version so it only gets worked out once
+low = np.real(np.fft.ifft(X * (1 - ramp(150, 190))))
+low = low / np.max(np.abs(low))
+bass = np.real(np.fft.ifft(np.fft.fft(np.tanh(3 * low)) * ramp(60, 80)))
 
 
 # hp = highpass gain, band = which harmonics to keep, drive = how hard tanh gets pushed,
@@ -48,11 +58,6 @@ def exciter(hp, band, drive, mix, bass_mix):
     harm = np.real(np.fft.ifft(np.fft.fft(harm) * band))
     harm = harm / np.max(np.abs(harm))
 
-    # big bottom, lowpass then tanh squashes the loud bits like a compressor
-    low = np.real(np.fft.ifft(X * (1 - ramp(150, 190))))
-    low = low / np.max(np.abs(low))
-    bass = np.tanh(3 * low)
-
     return mix * harm + bass_mix * bass
 
 
@@ -61,7 +66,8 @@ added1 = exciter(ramp(600, 800), 1, 5, 0.3, 0)
 
 # v2: v1 boosts everything above 800 Hz (12-20 kHz goes up about 7 dB) and puts stuff back
 # below 80 Hz where i'd removed the pops (see figure 2)
-# so the highpass is moved up to 3 kHz, only harmonics from 4-10 kHz are kept, plus a bit of bass
+# so the highpass is moved up to 3 kHz, only harmonics from 4-12 kHz are kept,
+# plus a bit of bass to try the big bottom side of the aphex diagram
 hp2 = ramp(2000, 3000)
 band2 = ramp(4000, 5000) * (1 - ramp(10000, 12000))  # highpass * lowpass = bandpass
 added2 = exciter(hp2, band2, 5, 0.15, 0.1)
@@ -88,34 +94,64 @@ def dB(s):
 
 x_dB = dB(x)
 
-# figure 1: output of v1 and v2, input drawn last in black so it doesnt get hidden
-fig1, ax1 = plt.subplots(figsize=(8, 4))
-ax1.plot(fp, dB(y1), label="v1 output", alpha=0.7)
-ax1.plot(fp, dB(y2), label="v2 output", alpha=0.7)
-ax1.plot(fp, x_dB, label="Input", color="k", linewidth=0.5)
-ax1.set_title("Exciter output spectra")
-
-# figure 2: only the part v1 and v2 add to the voice
-fig2, ax2 = plt.subplots(figsize=(8, 4))
-ax2.plot(fp, x_dB, label="Input", color="lightgrey")
-ax2.plot(fp, dB(added1), label="Added by v1", alpha=0.7)
-ax2.plot(fp, dB(added2), label="Added by v2", alpha=0.7)
-ax2.set_title("What v1 and v2 add to the voice")
-
-# same shading and labels on both
-for ax in [ax1, ax2]:
-    ax.axvspan(20, 80, color="grey", alpha=0.2, label="Removed (pops)")
-    ax.axvspan(80, 190, color="purple", alpha=0.15, label="v2 bass band")
-    ax.axvspan(4000, 10000, color="green", alpha=0.15, label="v2 harmonics band")
+# figures 1 and 2: what each version adds, drawn over the input so you can see how loud it is
+def plot_added(added, version, colour):
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(fp, x_dB, label="Input", color="lightgrey")
+    ax.plot(fp, dB(added), label=f"Added by {version}", color=colour)
+    ax.axvspan(20, 80, color="grey", alpha=0.2, label="Pops removed")
     ax.set_xscale("log")
     ax.set_xlim(20, fs / 2)
     ax.set_ylim(-120, 5)
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Amplitude (dB) relative to input peak")
-    ax.legend(loc="lower left", fontsize="small")
+    ax.set_title(f"What {version} adds to the voice")
+    return fig, ax
 
-fig1.tight_layout()
-fig2.tight_layout()
-#fig1.savefig("task3_spectra.pdf")
-#fig2.savefig("task3_added.pdf")
+
+arrow = dict(arrowstyle="->")
+
+fig1, ax1 = plot_added(added1, "v1", "C0")
+ax1.annotate("almost as loud as the voice\nabove 800 Hz, sounds harsh", xy=(8000, -30), xytext=(1000, -95), arrowprops=arrow)
+ax1.annotate("energy put back\nwhere the pops were", xy=(45, -50), xytext=(22, -100), arrowprops=arrow)
+ax1.legend(loc="upper right", fontsize="small")
+
+fig2, ax2 = plot_added(added2, "v2", "C1")
+ax2.axvspan(80, 190, color="purple", alpha=0.15, label="Bass band")
+ax2.axvspan(4000, 12000, color="green", alpha=0.15, label="Harmonics band")
+ax2.annotate("only 4-12 kHz is kept", xy=(7000, -40), xytext=(1500, -8), arrowprops=arrow)
+ax2.annotate("compressed bass", xy=(110, -25), xytext=(25, -60), arrowprops=arrow)
+ax2.text(22, -110, "nothing added below 60 Hz")
+ax2.legend(loc="lower right", fontsize="small")
+
+# figure 3: how much each version changes the level of the voice, averaged over 40 bands
+# so the curves are smooth enough to compare (starts at 80 Hz, below that the input is cut)
+edges = np.geomspace(80, 20000, 41)
+centres = np.sqrt(edges[:-1] * edges[1:])  # middle of each band on a log axis
+
+
+def band_power(s):
+    P = np.abs(np.fft.fft(s)[1:half]) ** 2
+    return np.array([P[(fp >= lo) & (fp < hi)].mean() for lo, hi in zip(edges[:-1], edges[1:])])
+
+
+Px = band_power(x)
+fig3, ax3 = plt.subplots(figsize=(8, 4))
+ax3.plot(centres, 10 * np.log10(band_power(y1) / Px), "o-", label="v1")
+ax3.plot(centres, 10 * np.log10(band_power(y2) / Px), "o-", label="v2")
+ax3.axhline(0, color="k", linewidth=0.5)
+ax3.annotate("v1 lifts everything above 800 Hz by 6-9 dB", xy=(1500, 6.1), xytext=(200, 7.5), arrowprops=arrow)
+ax3.annotate("v2 only lifts 4-12 kHz, by about 3 dB", xy=(7000, 3.4), xytext=(1000, 4.2), arrowprops=arrow)
+ax3.annotate("v2 bass, about +2 dB", xy=(130, 2.3), xytext=(200, 3.5), arrowprops=arrow)
+ax3.set_xscale("log")
+ax3.set_xlabel("Frequency (Hz)")
+ax3.set_ylabel("Change in level (dB)")
+ax3.set_title("How much each version changes the voice")
+ax3.legend(loc="upper left")
+
+for fig in [fig1, fig2, fig3]:
+    fig.tight_layout()
+#fig1.savefig("task3_v1.pdf")
+#fig2.savefig("task3_v2.pdf")
+#fig3.savefig("task3_change.pdf")
 plt.show()

@@ -1,8 +1,19 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 
-filenames = ["Zabi_1m.wav", "Zabi_5cm.wav"]
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
+
+filenames = ["Zabi_5cm.wav", "Zabi_1m.wav"]
+
+
+# gain that goes from 0 at f0 up to 1 at f1, so 1 - ramp is a lowpass (same as task 3)
+# slopes instead of hard steps because hard steps in the gain made the voice ring
+# f is the frequency axis of the file being processed, set in the loop below
+def ramp(f0, f1):
+    return np.clip((f - f0) / (f1 - f0), 0, 1)
+
 
 for filename in filenames:
     fs, x = wavfile.read(filename)
@@ -10,7 +21,7 @@ for filename in filenames:
     x = x / np.max(np.abs(x))  # normalise to +-1
     x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband
     N = len(x)
-   
+
     #fft
     X = np.fft.fft(x)
 
@@ -19,21 +30,21 @@ for filename in filenames:
     f = np.arange(N) * fs / N
     f = np.minimum(f, fs - f)
 
-    Y = X.copy()
-
     # remove everything below 80 Hz (rumble, and pops for the 5cm one)
-    Y[f < 80] = 0
+    # and the upper noise margin identified in task 1, above 20.5 kHz
+    G = ramp(60, 80) * (1 - ramp(20000, 20500))
 
-    # removes upper noise margin identified in task 1, above 20.5 kHz
-    Y[f > 20500] = 0
+    # boost 2-5 kHz to make the voice clearer
+    G *= 1 + 0.3 * ramp(1500, 2000) * (1 - ramp(5000, 6000))  # x1.3 is about +2.3 dB
 
     # boost bass for 1m only because bass is lost with distance
     # 5cm already has loads of bass (proximity effect)
+    # only below 120 Hz where the vowel fundamentals are (89-114 Hz in task 1),
+    # the room noise is worst compared to the voice at 120-200 Hz so that is left alone
     if filename == "Zabi_1m.wav":
-        Y[(f >= 100) & (f < 300)] *= 2  # x2 is about +6 dB
+        G *= 1 + 0.4 * (1 - ramp(120, 150))  # x1.4 is about +3 dB
 
-    # boost 2-5 kHz to make the voice clearer #patrick review, adds ring due to steep gain change
-    #Y[(f >= 2000) & (f < 5000)] *= 1.3  # x1.6 is about +4 dB
+    Y = X * G
 
     #ifft back to time domain
     y = np.real(np.fft.ifft(Y))  # imaginary part is basically 0
@@ -57,7 +68,7 @@ for filename in filenames:
     ax.axvspan(20, 80, color="grey", alpha=0.15)
     ax.axvspan(20500, fs / 2, color="grey", alpha=0.15)
     if filename == "Zabi_1m.wav":
-        ax.axvspan(100, 300, color="green", alpha=0.15)
+        ax.axvspan(80, 120, color="green", alpha=0.15)
     ax.axvspan(2000, 5000, color="green", alpha=0.15)
 
     ax.set_xscale("log")
