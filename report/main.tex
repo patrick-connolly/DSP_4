@@ -1,7 +1,8 @@
 % =====================================================================
 %  DSP Assignment 1 — Fourier Transform
 %  Group report (one submission). Lives in report/ inside the repo.
-%  Figures in report/figures/ are made by the savefig lines in Ass1/task*.py
+%  Figures are the vector PDFs saved by Ass1/task*.py, read from the Ass1 folder.
+%  Code in the appendix is from github.com/patrick-connolly/DSP_4 (commit cdffd66).
 % =====================================================================
 \documentclass[11pt,a4paper]{article}
 
@@ -19,7 +20,7 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage[nameinlink]{cleveref}
 
-\graphicspath{{figures/}}
+\graphicspath{{Ass1/}{../Ass1/}}
 \setlength{\parskip}{4pt}
 
 % Python listings
@@ -94,6 +95,7 @@ and the inverse FFT stays real:
 \end{equation}
 Spectra are plotted from bin 1 to $N/2$ (DC cannot go on a log axis) in
 decibels relative to the input peak, $20\log_{10}\!\left(|X[k]|/\max|X|\right)$.
+All figures in this report are vector PDFs saved directly by the scripts.
 
 Every filter in Tasks 2 and 3 is a real gain $G$ multiplied onto the FFT,
 followed by an IFFT. Each gain is built from a single linear ramp,
@@ -170,7 +172,7 @@ recorder's anti-aliasing roll-off, so it carries no useful speech.
 
 % =====================================================================
 \section{Task 2: Spectral Enhancement}
-\label{sec:task2}
+\label{sec:task2}\label{sec:enhance}
 
 Each recording is enhanced with a single gain curve $G$ built from
 \cref{eq:ramp}:
@@ -249,15 +251,13 @@ a modest \SI{2.3}{\decibel} in both recordings.
 \end{figure}
 
 % =====================================================================
-\section{Task 3: Aural Exciter}
-\label{sec:task3}
+\section{Aural Exciter}
+\label{sec:exciter}
 
 We based our exciter on the Aphex block diagram from the brief and applied it
-to the \SI{5}{\centi\metre} recording, after first removing the pops and the
-noise above \SI{20.5}{\kilo\hertz} with the same cuts as Task 2. The
-\SIrange{2}{5}{\kilo\hertz} boost is left out, because adding clarity is the
-exciter's job here. Like the diagram, the exciter has two sidechains that are
-summed with the dry voice:
+to the \SI{5}{\centi\metre} recording, after removing the pops and noise in
+the same way as in \cref{sec:enhance}. Like the diagram, it has two
+sidechains that are mixed back in with the original voice at the SUM block:
 \begin{equation}
   y[n] = x[n] + \mathrm{mix}\cdot h[n] + \mathrm{bass\_mix}\cdot b[n],
   \label{eq:mix}
@@ -265,44 +265,33 @@ summed with the dry voice:
 where \texttt{mix} and \texttt{bass\_mix} are the two Mix controls in the
 diagram and have the same names in our code.
 
-\paragraph{Exciter sidechain.}
-The voice is high-passed, normalised to a peak of 1 so that \texttt{drive}
-has the same effect at any recording level, and passed through a $\tanh$
-nonlinearity:
+In the Aural Exciter sidechain $h[n]$, the voice is high-passed and normalised
+to a peak of 1 before going through a $\tanh$ nonlinearity, as suggested in
+the brief:
 \begin{equation}
-  d[n] = \tanh\!\left(\mathrm{drive}\cdot\frac{x_{\mathrm{hp}}[n]}{\max|x_{\mathrm{hp}}|}\right),
-  \qquad
-  h[n] = \frac{\mathrm{IFFT}\{B[k]\,D[k]\}}{\max\left|\mathrm{IFFT}\{B[k]\,D[k]\}\right|}.
+  d[n] = \tanh\!\big( \mathrm{drive}\cdot x_{\mathrm{hp}}[n] \big),
   \label{eq:nonlin}
 \end{equation}
-Because $\tanh$ is odd, a single tone gains only odd harmonics. Speech contains
-many frequencies at once, though, so $\tanh$ also creates sum and difference
-frequencies that can land anywhere in the spectrum. The band-pass $B[k]$
-after the nonlinearity keeps only the harmonics we want, as the brief
-describes. Since $h[n]$ is normalised, \texttt{mix} is the peak level of the
-added signal relative to the voice.
-
-\paragraph{Big Bottom sidechain.}
-The voice below \SI{190}{\hertz} is normalised and put through
-$\tanh(3x)$. This squashes loud bass more than quiet bass, so it acts like
-the dynamics processor in the diagram and evens the bass out rather than simply
-boosting it. $\tanh$ also creates difference frequencies below
-\SI{80}{\hertz}, so the \SIrange{60}{80}{\hertz} pop cut is applied again
-afterwards.
-
-\subsection{Iterative development}
+which creates harmonics of the voice. Because speech contains lots of
+frequencies at once, the $\tanh$ also creates sum and difference frequencies
+between them that can land anywhere in the spectrum, so we band-pass $d[n]$
+again to keep only the harmonics we want, as the brief describes. The Big
+Bottom sidechain $b[n]$ works in a similar way on the low end, where the
+voice below \SI{190}{\hertz} is put through $\tanh(3x)$. This squashes loud
+bass more than quiet bass, so it acts like the dynamics processor in the
+diagram. All of the filters are done by multiplying the FFT and taking the
+IFFT, with sloped edges instead of hard cuts to avoid ringing.
 
 \begin{table}[htbp]
   \centering
-  \caption{Exciter settings and the measured change in band power,
-           $10\log_{10}(P_y/P_x)$, for each version.}
+  \caption{Exciter settings and how much each version changed the voice.}
   \label{tab:exciter}
   \begin{tabular}{@{}lcc@{}}
     \toprule
     & v1 (first try) & v2 (final) \\
     \midrule
     High-pass into $\tanh$ & \SI{800}{\hertz} & \SI{3}{\kilo\hertz} \\
-    Harmonics kept, $B[k]$ & all & \SIrange{4}{12}{\kilo\hertz} \\
+    Harmonics kept & all & \SIrange{4}{12}{\kilo\hertz} \\
     \texttt{drive} & 5 & 5 \\
     \texttt{mix} & 0.3 & 0.15 \\
     \texttt{bass\_mix} & 0 & 0.1 \\
@@ -310,72 +299,47 @@ afterwards.
     Change at \SIrange{80}{190}{\hertz} & \SI{0}{\decibel} & \SI{+2.2}{\decibel} \\
     Change at \SIrange{4}{10}{\kilo\hertz} & \SI{+6.7}{\decibel} & \SI{+2.8}{\decibel} \\
     Change at \SIrange{12}{20}{\kilo\hertz} & \SI{+7.5}{\decibel} & \SI{0}{\decibel} \\
-    Overall RMS change & \SI{+2.1}{\decibel} & \SI{+0.9}{\decibel} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\paragraph{v1: initial design.}
-The first version fed everything above \SI{800}{\hertz} into the $\tanh$ and
-added all of its output back at a mix of 0.3. \Cref{fig:exciter_v1} shows that
-the added signal is almost as loud as the voice itself above
-\SI{800}{\hertz}, and \cref{fig:exciter_change} shows that this lifts the
-entire upper spectrum by \SIrange{6}{9}{\decibel}. When we listened back, v1
-sounded harsh. The largest lift, \SI{7.5}{\decibel}, is at
-\SIrange{12}{20}{\kilo\hertz}, where the hissy ``s'' and ``t'' sounds sit.
-Because the $\tanh$ output was not filtered, its difference frequencies also
-put energy back below \SI{80}{\hertz}, exactly where the pops had just been
-removed (left annotation in \cref{fig:exciter_v1}).
+Our first version (v1) boosted everything above \SI{800}{\hertz} by
+\SIrange{6}{9}{\decibel} (\cref{fig:exciter_change}), which made the voice
+sound harsh. Because we didn't filter after the $\tanh$, it also put energy
+back below \SI{80}{\hertz}, where we had just removed the pops. For v2, we
+moved the high-pass up to \SI{3}{\kilo\hertz} and only kept harmonics between
+\SI{4}{\kilo\hertz} and \SI{12}{\kilo\hertz}. This band is centred around
+\SI{6}{\kilo\hertz}, where the brief says the ear is most sensitive. We also
+halved \texttt{mix} and added a small amount of Big Bottom bass.
+\Cref{fig:exciter_v2} shows that v2 only adds content in those two bands.
+When listening back, v1 sounds much sharper than v2. This is most likely
+because v1 raises the \SIrange{12}{20}{\kilo\hertz} range by
+\SI{7.5}{\decibel}, which is where the hissy ``s'' and ``t'' sounds sit, and
+keeps every harmonic the $\tanh$ creates at twice the mix level. v2 leaves
+that range untouched, so its added brightness stays in the region the ear is
+most sensitive to without making those sounds piercing.
+
+One thing we noticed is that with \texttt{drive} at 5, the $\tanh$ barely
+bends the signal, since only about \SI{1}{\percent} of samples are affected.
+This means most of v2's boost is really the existing
+\SIrange{4}{12}{\kilo\hertz} content turned up, with only some new harmonics
+on top. We tried a version with a drive of 20, which produced almost pure
+harmonics, but it sounded squawky, so we kept v2.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.85\linewidth]{task3_v1.pdf}
-  \caption{What exciter v1 adds to the voice (blue), drawn over the input
-           spectrum (grey).}
-  \label{fig:exciter_v1}
-\end{figure}
-
-\paragraph{v2: changes made.}
-To fix both problems, the high-pass was moved up to \SI{3}{\kilo\hertz}, and
-only harmonics between \SI{4}{\kilo\hertz} and \SI{12}{\kilo\hertz} are kept.
-This band is centred around \SI{6}{\kilo\hertz}, where the brief says the ear
-is most sensitive, and it stops short of the sibilant region. The mix was
-halved to 0.15, and a small amount of Big Bottom bass was added to try the
-other half of the Aphex diagram. \Cref{fig:exciter_v2} shows that v2 only adds
-content in those two bands and nothing below \SI{60}{\hertz}.
-\Cref{fig:exciter_change} shows the result: a \SI{3}{\decibel} lift at
-\SIrange{4}{12}{\kilo\hertz}, about \SI{2}{\decibel} of evened-out bass, and
-no change anywhere else. The overall RMS rises by only \SI{0.9}{\decibel},
-which matches the brief's aim of a voice that is perceived as louder without
-its amplitude changing much. By ear, v2 is brighter than the input without
-the piercing quality of v1.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\linewidth]{task3_v2.pdf}
-  \caption{What exciter v2 adds to the voice (orange): compressed bass at
-           \SIrange{80}{190}{\hertz} and harmonics at
-           \SIrange{4}{12}{\kilo\hertz} only.}
+  \includegraphics[width=\linewidth]{task3_v2.pdf}
+  \caption{What exciter v2 adds to the voice, drawn over the input spectrum.}
   \label{fig:exciter_v2}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.85\linewidth]{task3_change.pdf}
-  \caption{Change in level caused by each version, averaged over 40
-           log-spaced bands from \SI{80}{\hertz} to \SI{20}{\kilo\hertz}.}
+  \includegraphics[width=\linewidth]{task3_change.pdf}
+  \caption{How much each version changes the voice level, averaged over 40
+           log-spaced bands.}
   \label{fig:exciter_change}
 \end{figure}
-
-\paragraph{Why v2 was kept.}
-With \texttt{drive} at 5, only about \SI{1}{\percent} of v2's samples reach
-$|\mathrm{drive}\cdot x| > 1$, where $\tanh$ starts to bend (\SI{3}{\percent}
-for v1). Most of v2's lift is therefore the existing
-\SIrange{4}{12}{\kilo\hertz} content turned up, with a smaller amount of new
-harmonics on top. We tried a third version that fed only
-\SIrange{1.5}{3}{\kilo\hertz} into the $\tanh$ with a drive of 20. Its added
-signal was almost pure harmonics, but it sounded squawky, so we rejected it by
-ear and kept v2 as the final design.
 
 % =====================================================================
 \section{Conclusion}
@@ -407,12 +371,308 @@ both explain every line of the submitted code.
 \label{app:code}
 
 \subsection*{\texttt{task1.py}}
-\lstinputlisting{../Ass1/task1.py}
+\begin{lstlisting}
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.io import wavfile
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
+
+# Regions chosen by eye
+# same speaker and sentence, so the consonants sit in the same range at both distances
+marks = {
+    "Zabi_5cm.wav": {"vowels": [88.7, 95.3, 100.6, 104.7, 108, 122.5], "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
+    "Zabi_1m.wav":  {"vowels": [89.2, 98, 107.7, 114],  "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
+}
+
+# Main Loop
+for filename, m in marks.items():
+    fs, x = wavfile.read(filename)
+    x = x[:, 0]  # stereo file, both channels are the same
+    x = x / np.max(np.abs(x))  # normalise to +-1
+    x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband  ## "b" given in numpy doc just to cut trailing
+
+    N = len(x)
+    t = np.arange(N) / fs #for time axis
+
+    # spectrum up to Nyquist, skipping the DC bin so the log axis works
+    X = np.abs(np.fft.fft(x)[1:N // 2])
+    f = np.arange(1, N // 2) * fs / N
+    XdB = 20 * np.log10(X / np.max(X)) #dB relative to peak
+
+    # plotting
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
+    fig.suptitle(f"{filename} (fs = {fs} Hz)")
+    ax1.plot(t, x)
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Normalised amplitude")
+
+    ax2.plot(f, XdB)
+    ax2.set_xscale("log")
+    ax2.set_xlim(20, fs / 2)  # audible range up to Nyquist
+    ax2.set_ylim(-120, 5)
+    ax2.set_xlabel("Frequency (Hz)")
+    ax2.set_ylabel("Amplitude (dB) relative to peak")
+    ax2.vlines(m["vowels"], -120, 5, colors="r", linestyles="--", label="Vowel fundamentals")
+    ax2.axvspan(*m["consonants"], color="g", alpha=0.2, label="Consonants")
+    low, high = m["noise"]
+    ax2.axvspan(*low, color="grey", alpha=0.4, label="Noise")
+    ax2.axvspan(*high, color="grey", alpha=0.4)
+    ax2.legend(loc="lower left")
+    fig.tight_layout()
+    fig.savefig(filename.replace(".wav", ".pdf"))  
+
+plt.show()
+\end{lstlisting}
 
 \subsection*{\texttt{task2.py}}
-\lstinputlisting{../Ass1/task2.py}
+\begin{lstlisting}
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.io import wavfile
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
+
+filenames = ["Zabi_5cm.wav", "Zabi_1m.wav"]
+
+
+# gain that goes from 0 at f0 up to 1 at f1, so 1 - ramp is a lowpass (same as task 3)
+# slopes instead of hard steps because hard steps in the gain made the voice ring
+# f is the frequency axis of the file being processed, set in the loop below
+def ramp(f0, f1):
+    return np.clip((f - f0) / (f1 - f0), 0, 1)
+
+
+for filename in filenames:
+    fs, x = wavfile.read(filename)
+    x = x[:, 0]  # stereo file, both channels are the same
+    x = x / np.max(np.abs(x))  # normalise to +-1
+    x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband  ## "b" given in numpy doc just to cut trailing
+    N = len(x)
+
+    #fft
+    X = np.fft.fft(x)
+
+    # frequency of each bin, the second half is a mirror of the first half
+    # so fold it back so both halves get changed the same
+    f = np.arange(N) * fs / N
+    f = np.minimum(f, fs - f)
+
+    # remove everything below 80 Hz (rumble, and pops for the 5cm one)
+    # and the upper noise margin identified in task 1, above 20.5 kHz
+    G = ramp(60, 80) * (1 - ramp(20000, 20500))
+
+    # boost 2-5 kHz to make the voice clearer
+    G *= 1 + 0.3 * ramp(1500, 2000) * (1 - ramp(5000, 6000))  # x1.3 is about +2.3 dB
+
+    # boost bass for 1m only because bass is lost with distance
+    # 5cm already has loads of bass (proximity effect)
+    # only below 120 Hz where the vowel fundamentals are (89-114 Hz in task 1),
+    # the room noise is worst compared to the voice at 120-200 Hz so that is left alone
+    if filename == "Zabi_1m.wav":
+        G *= 1 + 0.4 * (1 - ramp(120, 150))  # x1.4 is about +3 dB
+
+    Y = X * G
+
+    #ifft back to time domain
+    y = np.real(np.fft.ifft(Y))  # imaginary part is basically 0
+    y = y / np.max(np.abs(y))  # normalise again so it doesnt clip
+
+    wavfile.write(filename.replace(".wav", "_enhanced.wav"), fs, y.astype(np.float32))
+
+    #plot before and after
+    half = N // 2
+    mag_before = np.abs(X[1:half])
+    mag_after = np.abs(Y[1:half])
+    ref = np.max(mag_before)  # same reference for both so the plot shows the real change
+    dB_before = 20 * np.log10(mag_before / ref + 1e-12)
+    dB_after = 20 * np.log10(mag_after / ref + 1e-12)
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(f[1:half], dB_before, label="Original", alpha=0.7)
+    ax.plot(f[1:half], dB_after, label="Enhanced", alpha=0.7)
+
+    # shade the bands that were changed, grey = removed, green = boosted
+    ax.axvspan(20, 80, color="grey", alpha=0.15)
+    ax.axvspan(20500, fs / 2, color="grey", alpha=0.15)
+    if filename == "Zabi_1m.wav":
+        ax.axvspan(80, 120, color="green", alpha=0.15)
+    ax.axvspan(2000, 5000, color="green", alpha=0.15)
+
+    ax.set_xscale("log")
+    ax.set_xlim(20, fs / 2)
+    ax.set_ylim(-120, 5)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Amplitude (dB) relative to peak")
+    ax.set_title(filename + ": removed (grey), boosted (green)")
+    ax.legend(loc="lower left")
+    fig.tight_layout()
+    fig.savefig(filename.replace(".wav", "_task2.pdf"))
+
+plt.show()
+\end{lstlisting}
 
 \subsection*{\texttt{task3.py}}
-\lstinputlisting{../Ass1/task3.py}
+\begin{lstlisting}
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.io import wavfile
+
+# aural exciter based on the aphex block diagram in the brief
+# exciter part: highpass -> tanh makes harmonics -> only keep some of them -> mix back in
+# big bottom part: lowpass -> tanh squashes it like a compressor -> mix back in
+# all the filtering is done by multiplying the fft and then doing the ifft (like task 2)
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
+
+fs, x = wavfile.read("Zabi_5cm.wav")
+x = x[:, 0]  # stereo file, both channels are the same
+x = x / np.max(np.abs(x))  # normalise to +-1
+x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband
+N = len(x)
+
+# frequency of each bin, folded like in task 2 so both halves get changed the same
+f = np.arange(N) * fs / N
+f = np.minimum(f, fs - f)
+
+
+# gain that goes from 0 at f0 up to 1 at f1, so 1 - ramp is a lowpass
+# used a slope instead of a hard cut because hard cuts can cause ringing
+def ramp(f0, f1):
+    return np.clip((f - f0) / (f1 - f0), 0, 1)
+
+
+#fft
+X = np.fft.fft(x)
+
+# remove pops below 80 Hz and noise above 20.5 kHz first, same cuts as task 2
+# task 2's 2-5 kHz boost is left out, making the voice clearer is the exciter's job here
+X = X * ramp(60, 80) * (1 - ramp(20000, 20500))
+x = np.real(np.fft.ifft(X))
+
+# big bottom, lowpass then tanh squashes the loud bits like a compressor
+# tanh puts a bit back below 80 Hz, so the pop cut is done again afterwards
+# it's the same for every version so it only gets worked out once
+low = np.real(np.fft.ifft(X * (1 - ramp(150, 190))))
+low = low / np.max(np.abs(low))
+bass = np.real(np.fft.ifft(np.fft.fft(np.tanh(3 * low)) * ramp(60, 80)))
+
+
+# hp = highpass gain, band = which harmonics to keep, drive = how hard tanh gets pushed,
+# mix and bass_mix = how much of each part gets added back
+# returns only the part that gets added to the voice
+def exciter(hp, band, drive, mix, bass_mix):
+    # highpass, then normalise so drive does the same thing every time
+    side = np.real(np.fft.ifft(X * hp))
+    side = side / np.max(np.abs(side))
+
+    # tanh makes the harmonics, its symmetric so only odd ones (3rd, 5th...)
+    harm = np.tanh(drive * side)
+
+    # only keep the harmonics inside the band
+    harm = np.real(np.fft.ifft(np.fft.fft(harm) * band))
+    harm = harm / np.max(np.abs(harm))
+
+    return mix * harm + bass_mix * bass
+
+
+# v1 first try: highpass at 800 Hz and keep all the harmonics (band = 1)
+added1 = exciter(ramp(600, 800), 1, 5, 0.3, 0)
+
+# v2: v1 boosts everything above 800 Hz (12-20 kHz goes up about 7 dB) and puts stuff back
+# below 80 Hz where i'd removed the pops (see figure 1)
+# so the highpass is moved up to 3 kHz, only harmonics from 4-12 kHz are kept,
+# plus a bit of bass to try the big bottom side of the aphex diagram
+hp2 = ramp(2000, 3000)
+band2 = ramp(4000, 5000) * (1 - ramp(10000, 12000))  # highpass * lowpass = bandpass
+added2 = exciter(hp2, band2, 5, 0.15, 0.1)
+
+y1 = x + added1
+y2 = x + added2
+
+# save them so i can listen, normalised so they dont clip
+out1 = y1 / np.max(np.abs(y1))
+out2 = y2 / np.max(np.abs(y2))
+wavfile.write("Zabi_5cm_exciter_v1_initial.wav", fs, out1.astype(np.float32))
+wavfile.write("Zabi_5cm_exciter_v2_final.wav", fs, out2.astype(np.float32))
+
+#plotting
+half = N // 2
+fp = f[1:half]  # skip DC for the log axis
+ref = np.max(np.abs(X[1:half]))  # 0 dB = input peak so all the curves can be compared
+
+
+def dB(s):
+    mag = np.abs(np.fft.fft(s)[1:half])
+    return 20 * np.log10(mag / ref + 1e-12)
+
+
+x_dB = dB(x)
+
+# figures 1 and 2: what each version adds, drawn over the input so you can see how loud it is
+def plot_added(added, version, colour):
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(fp, x_dB, label="Input", color="lightgrey")
+    ax.plot(fp, dB(added), label=f"Added by {version}", color=colour)
+    ax.axvspan(20, 80, color="grey", alpha=0.2, label="Pops removed")
+    ax.set_xscale("log")
+    ax.set_xlim(20, fs / 2)
+    ax.set_ylim(-120, 5)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Amplitude (dB) relative to input peak")
+    ax.set_title(f"What {version} adds to the voice")
+    return fig, ax
+
+
+arrow = dict(arrowstyle="->")
+
+fig1, ax1 = plot_added(added1, "v1", "C0")
+ax1.annotate("almost as loud as the voice\nabove 800 Hz, sounds harsh", xy=(8000, -30), xytext=(1000, -95), arrowprops=arrow)
+ax1.annotate("energy put back\nwhere the pops were", xy=(45, -50), xytext=(22, -100), arrowprops=arrow)
+ax1.legend(loc="upper right", fontsize="small")
+
+fig2, ax2 = plot_added(added2, "v2", "C1")
+ax2.axvspan(80, 190, color="purple", alpha=0.15, label="Bass band")
+ax2.axvspan(4000, 12000, color="green", alpha=0.15, label="Harmonics band")
+ax2.annotate("only 4-12 kHz is kept", xy=(7000, -40), xytext=(1500, -8), arrowprops=arrow)
+ax2.annotate("compressed bass", xy=(110, -25), xytext=(25, -60), arrowprops=arrow)
+ax2.text(22, -110, "nothing added below 60 Hz")
+ax2.legend(loc="lower right", fontsize="small")
+
+# figure 3: how much each version changes the level of the voice, averaged over 40 bands
+# so the curves are smooth enough to compare (starts at 80 Hz, below that the input is cut)
+edges = np.geomspace(80, 20000, 41)
+centres = np.sqrt(edges[:-1] * edges[1:])  # middle of each band on a log axis
+
+
+def band_power(s):
+    P = np.abs(np.fft.fft(s)[1:half]) ** 2
+    return np.array([P[(fp >= lo) & (fp < hi)].mean() for lo, hi in zip(edges[:-1], edges[1:])])
+
+
+Px = band_power(x)
+fig3, ax3 = plt.subplots(figsize=(8, 4))
+ax3.plot(centres, 10 * np.log10(band_power(y1) / Px), "o-", label="v1")
+ax3.plot(centres, 10 * np.log10(band_power(y2) / Px), "o-", label="v2")
+ax3.axhline(0, color="k", linewidth=0.5)
+ax3.annotate("v1 lifts everything above 800 Hz by 6-9 dB", xy=(1500, 6.1), xytext=(200, 7.5), arrowprops=arrow)
+ax3.annotate("v2 only lifts 4-12 kHz, by about 3 dB", xy=(7000, 3.4), xytext=(1000, 4.2), arrowprops=arrow)
+ax3.annotate("v2 bass, about +2 dB", xy=(130, 2.3), xytext=(200, 3.5), arrowprops=arrow)
+ax3.set_xscale("log")
+ax3.set_xlabel("Frequency (Hz)")
+ax3.set_ylabel("Change in level (dB)")
+ax3.set_title("How much each version changes the voice")
+ax3.legend(loc="upper left")
+
+for fig in [fig1, fig2, fig3]:
+    fig.tight_layout()
+fig1.savefig("task3_v1.pdf")
+fig2.savefig("task3_v2.pdf")
+fig3.savefig("task3_change.pdf")
+plt.show()
+\end{lstlisting}
 
 \end{document}
