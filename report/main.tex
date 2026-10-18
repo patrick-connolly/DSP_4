@@ -60,7 +60,7 @@ Zabi spoke the same sentence ''Real Time Terahertz Holographic Imaging'' twice i
 files are uncompressed WAV at \SI{44.1}{\kilo\hertz}, 16-bit, with identical
 left and right channels and a peak of \SI{98.9}{\percent} of full scale, so
 neither recording is clipped. The scripts keep one channel, normalise it to a
-peak of $\pm1$ and trim the digital silence that GarageBand adds onto the end, using NumPy's '\texttt{trim\_zeros}' function, with argument \texttt{"b"} to only cut trailing zeros.
+peak of $\pm1$ and trim the digital silence that GarageBand adds onto the end, using NumPy's \texttt{trim\_zeros} function, with argument \texttt{"b"} to only cut trailing zeros.
 
 \begin{table}[htbp]
   \centering
@@ -335,6 +335,21 @@ limiting both the input to the nonlinearity and the harmonics kept from it was
 what turned a harsh first attempt into a usable design. The final exciter lifts
 \SIrange{4}{12}{\kilo\hertz} by about \SI{3}{\decibel}.
 
+% =====================================================================
+\section*{Appendix: Python Code}
+\label{app:code}
+% Reads the scripts straight from Ass1/ so the listing always matches the code
+\newcommand{\codefile}[1]{%
+  \IfFileExists{Ass1/#1}{\lstinputlisting{Ass1/#1}}{\lstinputlisting{../Ass1/#1}}}
+
+\subsection*{\texttt{task1.py}}
+\codefile{task1.py}
+
+\subsection*{\texttt{task2.py}}
+\codefile{task2.py}
+
+\subsection*{\texttt{task3.py}}
+\codefile{task3.py}
 
 
 \end{document}
