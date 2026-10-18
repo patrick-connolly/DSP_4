@@ -79,6 +79,6 @@ for filename in filenames:
     ax.set_title(filename + ": removed (grey), boosted (green)")
     ax.legend(loc="lower left")
     fig.tight_layout()
-    #fig.savefig(filename.replace(".wav", "_task2.pdf"))
+    fig.savefig(filename.replace(".wav", "_task2.pdf"))
 
 plt.show()

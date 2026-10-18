@@ -8,8 +8,8 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files where
 # Regions chosen by eye
 # same speaker and sentence, so the consonants sit in the same range at both distances
 marks = {
-    "Zabi_5cm.wav": {"vowels": [88.2, 95.3, 100.6, 104.7, 108, 122.5], "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
-    "Zabi_1m.wav":  {"vowels": [89.2, 98, 107.7, 114],  "consonants": (4200, 20000), "noise": [(20, 80), (20500, 22050)]},
+    "Zabi_5cm.wav": {"vowels": [88.7, 95.3, 100.6, 104.7, 108, 122.5], "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
+    "Zabi_1m.wav":  {"vowels": [89.2, 98, 107.7, 114],  "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
 }
 
 # Main Loop
@@ -47,6 +47,6 @@ for filename, m in marks.items():
     ax2.axvspan(*high, color="grey", alpha=0.4)
     ax2.legend(loc="lower left")
     fig.tight_layout()
-    #fig.savefig(filename.replace(".wav", ".pdf"))  
+    fig.savefig(filename.replace(".wav", ".pdf"))  
 
 plt.show()

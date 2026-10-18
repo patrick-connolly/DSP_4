@@ -65,7 +65,7 @@ def exciter(hp, band, drive, mix, bass_mix):
 added1 = exciter(ramp(600, 800), 1, 5, 0.3, 0)
 
 # v2: v1 boosts everything above 800 Hz (12-20 kHz goes up about 7 dB) and puts stuff back
-# below 80 Hz where i'd removed the pops (see figure 2)
+# below 80 Hz where i'd removed the pops (see figure 1)
 # so the highpass is moved up to 3 kHz, only harmonics from 4-12 kHz are kept,
 # plus a bit of bass to try the big bottom side of the aphex diagram
 hp2 = ramp(2000, 3000)
@@ -151,7 +151,7 @@ ax3.legend(loc="upper left")
 
 for fig in [fig1, fig2, fig3]:
     fig.tight_layout()
-#fig1.savefig("task3_v1.pdf")
-#fig2.savefig("task3_v2.pdf")
-#fig3.savefig("task3_change.pdf")
+fig1.savefig("task3_v1.pdf")
+fig2.savefig("task3_v2.pdf")
+fig3.savefig("task3_change.pdf")
 plt.show()
