@@ -1,8 +1,7 @@
 % =====================================================================
 %  DSP Assignment 1 — Fourier Transform
 %  Group report (one submission). Lives in report/ inside the repo.
-%  Figures are the vector PDFs saved by Ass1/task*.py, read from the Ass1 folder.
-%  Code in the appendix is from github.com/patrick-connolly/DSP_4 (commit cdffd66).
+
 % =====================================================================
 \documentclass[11pt,a4paper]{article}
 
@@ -56,12 +55,12 @@
 \section{Recordings and Method}
 \label{sec:method}
 
-Zabi spoke the same sentence "Real Time Terahertz Holographic Imaging" twice into an iPhone 17 Pro, once at
+Zabi spoke the same sentence ''Real Time Terahertz Holographic Imaging'' twice into an iPhone 17 Pro, once at
 \SI{5}{\centi\metre} and once at \SI{1}{\metre} from the microphone. Both
 files are uncompressed WAV at \SI{44.1}{\kilo\hertz}, 16-bit, with identical
 left and right channels and a peak of \SI{98.9}{\percent} of full scale, so
 neither recording is clipped. The scripts keep one channel, normalise it to a
-peak of $\pm1$ and trim the digital silence that GarageBand adds onto the end, using a Numpy function '\texttt{trim\_zeros}', with argument 'b' to only cut trailing zeros.
+peak of $\pm1$ and trim the digital silence that GarageBand adds onto the end, using NumPy's '\texttt{trim\_zeros}' function, with argument \texttt{"b"} to only cut trailing zeros.
 
 \begin{table}[htbp]
   \centering
@@ -149,7 +148,7 @@ stops showing a regular harmonic comb and turns into a broad, noise-like
 plateau, so we start the consonant range there. It extends up to
 \SI{20}{\kilo\hertz}. The hump at \SIrange{17}{20}{\kilo\hertz} is still
 \SIrange{16}{24}{\decibel} above the silent lead-in, so it is speech, and above
-\SI{20}{\kilo\hertz} the spectrum falls off steeply due to the Nyquist limit.
+\SI{20}{\kilo\hertz} the spectrum falls off steeply due to the recorder's anti-aliasing filter which sits just below the Nyquist limit.
 
 \paragraph{Noise.}
 Two regions most likely contain only noise. Below \SI{80}{\hertz} is under
@@ -195,7 +194,7 @@ The output is renormalised to a peak of 1 and saved as a 32-bit float WAV.
 \end{table}
 
 \paragraph{\SI{5}{\centi\metre}: pops.}
-The risk at close range is plosive pops created appear below \SI{80}{\hertz}. The close
+The risk at close range is plosive pops, which appear below \SI{80}{\hertz}. The close
 recording also already has a strong low end, so no bass is added. Cutting
 below \SI{80}{\hertz} removes the pops without touching the voice, since the
 lowest fundamental is \SI{88.7}{\hertz}. The ramp starts at \SI{60}{\hertz},
@@ -213,8 +212,7 @@ fundamentals and made the silent parts noisier, so it was replaced.
 
 \paragraph{Clarity.}
 The \SIrange{2}{5}{\kilo\hertz} region holds the consonant detail that makes
-speech intelligible. It is lifted by
-a \SI{2.3}{\decibel} in both recordings.
+speech intelligible. It is lifted by \SI{2.3}{\decibel} in both recordings.
 \Cref{fig:t2_5cm,fig:t2_1m} show the spectra before and after.
 
 \begin{figure}[htbp]
@@ -335,8 +333,7 @@ partly removed with FFT gains. At close range the main problem was pops below
 essential, because hard edges made the enhanced voice ring. For the exciter,
 limiting both the input to the nonlinearity and the harmonics kept from it was
 what turned a harsh first attempt into a usable design. The final exciter lifts
-\SIrange{4}{12}{\kilo\hertz} by about \SI{3}{\decibel} while changing the
-overall level by under \SI{1}{\decibel}.
+\SIrange{4}{12}{\kilo\hertz} by about \SI{3}{\decibel}.
 
 
 
