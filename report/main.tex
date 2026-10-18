@@ -52,10 +52,10 @@
 \maketitle
 
 % =====================================================================
-\section{Recordings and Method}
+\section*{Recordings and Method}
 \label{sec:method}
 
-Zabi spoke the same sentence ''Real Time Terahertz Holographic Imaging'' twice into an iPhone 17 Pro, once at
+Zabi spoke the same sentence ``Real Time Terahertz Holographic Imaging'' twice into an iPhone 17 Pro, once at
 \SI{5}{\centi\metre} and once at \SI{1}{\metre} from the microphone. Both
 files are uncompressed WAV at \SI{44.1}{\kilo\hertz}, 16-bit, with identical
 left and right channels and a peak of \SI{98.9}{\percent} of full scale, so
@@ -69,6 +69,7 @@ peak of $\pm1$ and trim the digital silence that GarageBand adds onto the end, u
   \begin{tabular}{@{}lcc@{}}
     \toprule
     & \SI{5}{\centi\metre} & \SI{1}{\metre} \\
+    \midrule
     FFT length $N$             & \num{107398} & \num{114257} \\
     Bin spacing $f_s/N$        & \SI{0.41}{\hertz} & \SI{0.39}{\hertz} \\
     \bottomrule
@@ -103,7 +104,7 @@ the voice audibly ring. Replacing every edge with a ramp shortened the impulse
 response of the gain and removed the ringing, so ramps are used throughout.
 
 % =====================================================================
-\section{Task 1: Signal Analysis}
+\section*{Task 1: Signal Analysis}
 \label{sec:task1}
 
 \begin{figure}[htbp]
@@ -157,7 +158,7 @@ in the \SI{5}{\centi\metre} recording, the low-frequency pops. Above \SI{20.5}{\
 recorder's anti-aliasing roll-off, so it carries no useful speech.
 
 % =====================================================================
-\section{Task 2: Spectral Enhancement}
+\section*{Task 2: Spectral Enhancement}
 \label{sec:task2}\label{sec:enhance}
 
 Each recording is enhanced with a single gain curve $G$ built from
@@ -232,7 +233,7 @@ speech intelligible. It is lifted by \SI{2.3}{\decibel} in both recordings.
 \end{figure}
 
 % =====================================================================
-\section{Aural Exciter}
+\section*{Task 3: Aural Exciter}
 \label{sec:exciter}
 
 We based our exciter on the Aphex block diagram from the brief and applied it
@@ -323,7 +324,7 @@ harmonics, but it sounded squawky, so we kept v2.
 \end{figure}
 
 % =====================================================================
-\section{Conclusion}
+\section*{Conclusion}
 \label{sec:conclusion}
 
 Moving from \SI{5}{\centi\metre} to \SI{1}{\metre} raised the room-noise floor relative to the voice. Most of that noise is
