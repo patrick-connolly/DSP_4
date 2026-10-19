@@ -327,10 +327,12 @@ harmonics, but it sounded squawky, so we kept v2.
 \section*{Conclusion}
 \label{sec:conclusion}
 
-Moving from \SI{5}{\centi\metre} to \SI{1}{\metre} raised the room-noise floor relative to the voice. Most of that noise is
-below \SI{200}{\hertz}, so it overlaps the vowel fundamentals and can only be
-partly removed with FFT gains. At close range the main problem was pops below
-\SI{80}{\hertz}, which could be removed cleanly. Ramped gain edges were
+Moving from \SI{5}{\centi\metre} to \SI{1}{\metre} raised the room-noise
+floor relative to the voice. At \SI{1}{\metre} this noise extends up to
+about \SI{200}{\hertz}, so the cut below \SI{80}{\hertz} removes only part
+of it, since anything higher overlaps the vowel fundamentals. At
+\SI{5}{\centi\metre} the main problem was pops below \SI{80}{\hertz}, which
+the same cut removed cleanly. Ramped gain edges were
 essential, because hard edges made the enhanced voice ring. For the exciter,
 limiting both the input to the nonlinearity and the harmonics kept from it was
 what turned a harsh first attempt into a usable design. The final exciter lifts
