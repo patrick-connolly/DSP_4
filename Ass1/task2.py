@@ -8,16 +8,14 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files where
 filenames = ["Zabi_5cm.wav", "Zabi_1m.wav"]
 
 
-# gain that goes from 0 at f0 up to 1 at f1, so 1 - ramp is a lowpass (same as task 3)
-# slopes instead of hard steps because hard steps in the gain made the voice ring
-# f is the frequency axis of the file being processed, set in the loop below
+# gain that goes from 0 at f0 up to 1 at f1, so 1- ramp is a lowpass
 def ramp(f0, f1):
     return np.clip((f - f0) / (f1 - f0), 0, 1)
 
 
 for filename in filenames:
     fs, x = wavfile.read(filename)
-    x = x[:, 0]  # stereo file, both channels are the same
+    x = x[:, 0]  # stereo file, delete second channel
     x = x / np.max(np.abs(x))  # normalise to +-1
     x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband  ## "b" given in numpy doc just to cut trailing
     N = len(x)
@@ -25,29 +23,24 @@ for filename in filenames:
     #fft
     X = np.fft.fft(x)
 
-    # frequency of each bin, the second half is a mirror of the first half
-    # so fold it back so both halves get changed the same
+    # frequency of each bin the second half is a mirror of the first half
     f = np.arange(N) * fs / N
     f = np.minimum(f, fs - f)
 
-    # remove everything below 80 Hz (rumble, and pops for the 5cm one)
-    # and the upper noise margin identified in task 1, above 20.5 kHz
+    # remove everything below 80 Hz and the upper noise margin above 20.5 kHz
     G = ramp(60, 80) * (1 - ramp(20000, 20500))
 
-    # boost 2-5 kHz to make the voice clearer
+    # boost 2-5 kHz
     G *= 1 + 0.3 * ramp(1500, 2000) * (1 - ramp(5000, 6000))  # x1.3 is about +2.3 dB
 
-    # boost bass for 1m only because bass is lost with distance
-    # 5cm already has loads of bass (proximity effect)
-    # only below 120 Hz where the vowel fundamentals are (89-114 Hz in task 1),
-    # the room noise is worst compared to the voice at 120-200 Hz so that is left alone
+    # boost bass for 1m only
     if filename == "Zabi_1m.wav":
         G *= 1 + 0.4 * (1 - ramp(120, 150))  # x1.4 is about +3 dB
 
     Y = X * G
 
-    #ifft back to time domain
-    y = np.real(np.fft.ifft(Y))  # imaginary part is basically 0
+    #ifft
+    y = np.real(np.fft.ifft(Y))  
     y = y / np.max(np.abs(y))  # normalise again so it doesnt clip
 
     wavfile.write(filename.replace(".wav", "_enhanced.wav"), fs, y.astype(np.float32))
@@ -64,7 +57,7 @@ for filename in filenames:
     ax.plot(f[1:half], dB_before, label="Original", alpha=0.7)
     ax.plot(f[1:half], dB_after, label="Enhanced", alpha=0.7)
 
-    # shade the bands that were changed, grey = removed, green = boosted
+    #grey =removed green = boosted
     ax.axvspan(20, 80, color="grey", alpha=0.15)
     ax.axvspan(20500, fs / 2, color="grey", alpha=0.15)
     if filename == "Zabi_1m.wav":

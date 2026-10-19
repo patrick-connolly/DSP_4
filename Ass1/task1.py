@@ -6,7 +6,7 @@ from scipy.io import wavfile
 os.chdir(os.path.dirname(os.path.abspath(__file__)))  # find the wav files wherever the script is run from
 
 # Regions chosen by eye
-# same speaker and sentence, so the consonants sit in the same range at both distances
+
 marks = {
     "Zabi_5cm.wav": {"vowels": [88.7, 95.3, 100.6, 104.7, 108, 122.5], "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
     "Zabi_1m.wav":  {"vowels": [89.2, 98, 107.7, 114],  "consonants": (3000, 20000), "noise": [(20, 80), (20500, 22050)]},
@@ -15,12 +15,12 @@ marks = {
 # Main Loop
 for filename, m in marks.items():
     fs, x = wavfile.read(filename)
-    x = x[:, 0]  # stereo file, both channels are the same
+    x = x[:, 0]  # stereo file, delete second channel
     x = x / np.max(np.abs(x))  # normalise to +-1
     x = np.trim_zeros(x, "b")  # trim trailing zeros added by garageband  ## "b" given in numpy doc just to cut trailing
 
     N = len(x)
-    t = np.arange(N) / fs #for time axis
+    t = np.arange(N) / fs #time axis
 
     # spectrum up to Nyquist, skipping the DC bin so the log axis works
     X = np.abs(np.fft.fft(x)[1:N // 2])
