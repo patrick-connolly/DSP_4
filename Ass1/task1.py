@@ -29,7 +29,7 @@ for filename, m in marks.items():
 
     # plotting
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
-    fig.suptitle(f"{filename} (fs = {fs} Hz)")
+    fig.suptitle(f"{filename} ")
     ax1.plot(t, x)
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("Normalised amplitude")
