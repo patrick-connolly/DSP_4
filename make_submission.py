@@ -42,7 +42,7 @@ SCRIPTS = {
     ]),
     "task3.py": ("auralexciter.py", [
         ("Zabi_5cm_exciter_v1_initial.wav", "exciter_speech_v1_initial.wav"),
-        ("Zabi_5cm_exciter_v2_final.wav", "exciter_speech.wav"),
+        ("Zabi_5cm_exciter_v2_final.wav", "exciter_speech_v2_final.wav"),
         ("Zabi_5cm.wav", "original_speech_5cm.wav"),
     ]),
 }
