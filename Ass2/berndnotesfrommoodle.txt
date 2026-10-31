@@ -1,0 +1,19 @@
+Hi all,
+
+I've added assignment 2 submission instructions to moodle. We are getting a bit more into structured programming and object oriented programming (huh!). In terms of structure: we have now different parts with different functionality and should separate them. In particular now we have clear separation of FIR _design_ (calc the coefficients) and FIR _realtime operation_. That should be reflected in the structure:
+A python module which contains all the _design_ functions.
+A python module which contains all the _realtime_ filtering.
+A main program using these library functions above.
+
+Not done in this course but at the end the FIR filter design can be done in Python but the actual realtime filtering in C++ or even in an FPGA! Check out this C++ FIR filter library: https://github.com/berndporr/fir1 written by one of my PhD students and I keep it going. In the demo directory I calc the coefficients with Python and then import them into the C++ library.
+
+As you see in actual applications the calculation of the coefficients might be done even in another programming language!
+
+Best,
+/Bernd
+
+
+Hi all,
+remember to use column 8 of your ecg recording (counting from 0). See previous post.
+Best,
+/Bernd
