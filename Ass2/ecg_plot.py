@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 HERE = os.path.dirname(os.path.abspath(__file__))  # find the data wherever the script is run from
 MINE = "ecg1.tsv"
-PARTNER = "ecg2.tsv"  # the other lab partner, gives the matched filter template
+ZABI = "ecg2.tsv"  # Zabi's recording, gives the matched filter template
 ECG_COLUMN = 8  # counting from 0, as told on moodle
 
 # noise picked out of the task 1 spectra, these ranges go into the FIR design in task 2.
@@ -97,6 +97,6 @@ def plot_ecg(filename):
 
 
 if __name__ == "__main__":
-    for filename in (PARTNER, MINE):
+    for filename in (ZABI, MINE):
         plot_ecg(filename)
     plt.show()

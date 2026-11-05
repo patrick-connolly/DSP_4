@@ -4,7 +4,7 @@ Run with: python3 heartbeat.py
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from ecg_plot import MINE, PARTNER, BASELINE, MAINS, load_ecg, save
+from ecg_plot import MINE, ZABI, BASELINE, MAINS, load_ecg, save
 from fir_design import design_fir
 from fir_filter import FIRfilter
 
@@ -16,16 +16,16 @@ def prefilter(x, h):
 
 
 fs, x = load_ecg(MINE)
-fs_p, xp = load_ecg(PARTNER)
-assert fs == fs_p, "template and ECG need the same sampling rate"
+fs_zabi, x_zabi = load_ecg(ZABI)
+assert fs == fs_zabi, "template and ECG need the same sampling rate"
 h = design_fir(fs, [BASELINE, MAINS])
 M = len(h)
 y = prefilter(x, h)
 
-# template: one PQRST from the partner's filtered ECG
-yp = prefilter(xp, h)
-r = M + fs + np.argmax(np.abs(yp[M + fs:M + 4 * fs]))
-template = yp[r - int(0.3 * fs):r + int(0.4 * fs)]
+# template: one PQRST from Zabi's filtered ECG
+y_zabi = prefilter(x_zabi, h)
+r = M + fs + np.argmax(np.abs(y_zabi[M + fs:M + 4 * fs]))
+template = y_zabi[r - int(0.3 * fs):r + int(0.4 * fs)]
 template = template - np.mean(template)
 
 # matched filter = FIR whose coefficients are the time reversed template, run on our filtered ECG.
@@ -57,7 +57,7 @@ fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 9))
 ax1.plot(np.arange(len(template)) / fs, template)
 ax1.set_xlabel("Time (s)")
 ax1.set_ylabel("ECG (mV)")
-ax1.set_title("Template (partner's heartbeat)")
+ax1.set_title("Template (Zabi's heartbeat)")
 show = slice(skip, skip + 10 * fs)
 ax2.plot(t[show], m[show])
 ax2.axhline(threshold, color="r", linestyle="--", label="Threshold")
