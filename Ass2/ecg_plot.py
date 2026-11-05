@@ -1,36 +1,30 @@
-"""Task 1: plot both ECGs and their spectra, and pick out the noise to remove.
-
-Run with: python3 ecg_plot.py
-Also holds the ECG loading and spectrum helpers the other scripts import.
-"""
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-HERE = os.path.dirname(os.path.abspath(__file__))  # find the data wherever the script is run from
+HERE = os.path.dirname(os.path.abspath(__file__))  #file finder
 MINE = "ecg1.tsv"
-ZABI = "ecg2.tsv"  # Zabi's recording, gives the matched filter template
-ECG_COLUMN = 8  # counting from 0, as told on moodle
+ZABI = "ecg2.tsv"  # Zabi recording for matched filter template
+ECG_COLUMN = 8  #ecg voltage 
 
-# noise picked out of the task 1 spectra, these ranges go into the FIR design in task 2.
+# noise picked out forFIR
 # no 100 Hz band: at fs = 250 Hz all mains harmonics alias onto 0, 50 or 100 Hz and there is no peak at 100 Hz
 BASELINE = (0, 0.5)
 MAINS = (48, 52)
-MAINS_HZ = 50.13  # measured mains peak, the LMS noise reference in task 4
+MAINS_HZ = 50.13  # mains noise for the LMS noise reference
 
 
 def load_ecg(filename):
     data = np.loadtxt(os.path.join(HERE, filename))
     fs = round(1 / (data[1, 0] - data[0, 0]))  # sampling rate from the time column (250 Hz)
-    return fs, data[:, ECG_COLUMN] * 1000  # V -> mV
+    return fs, data[:, ECG_COLUMN] * 1000  #make mV
 
 
 def save(fig, filename):
     fig.savefig(os.path.join(HERE, filename))
 
 
-def spectrum(x, fs):
-    # one sided amplitude spectrum, frequency axis built by hand since fftfreq isn't allowed
+def spectrum(x, fs): # frequency axis
     N = len(x)
     X = 2 * np.abs(np.fft.fft(x)[:N // 2]) / N
     X[0] /= 2  # DC has no negative frequency twin
@@ -45,7 +39,7 @@ def plot_ecg(filename):
     fs, x = load_ecg(filename)
     t = np.arange(len(x)) / fs
     f, X = spectrum(x, fs)
-    X = X * 1000  # mV -> uV, DC kept because it is part of the noise
+    X = X * 1000  # makes uV
 
     # one heartbeat: R peak between 5 and 6 s, then 0.35 s before to 0.55 s after it
     r = 5 * fs + np.argmax(x[5 * fs:6 * fs])
