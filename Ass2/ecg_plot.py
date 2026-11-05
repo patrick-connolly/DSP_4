@@ -47,9 +47,6 @@ def plot_ecg(filename):
     f, X = spectrum(x, fs)
     X = X * 1000  # mV -> uV, DC kept because it is part of the noise
 
-    # heart rate fundamental = strongest peak between 40 and 120 bpm
-    hr = f[np.argmax(X * ((f > 0.67) & (f < 2)))]
-
     # one heartbeat: R peak between 5 and 6 s, then 0.35 s before to 0.55 s after it
     r = 5 * fs + np.argmax(x[5 * fs:6 * fs])
     beat = slice(r - int(0.35 * fs), r + int(0.55 * fs))
@@ -82,8 +79,8 @@ def plot_ecg(filename):
     ax4.set_xlim(0, 5)
     ax4.set_ylim(0, 1.3 * X[(f > BASELINE[1]) & (f < 5)].max())
     ax4.axvspan(*BASELINE, color="r", alpha=0.3, label="Noise: DC + baseline wander")
-    ax4.vlines(hr * np.arange(1, 5), *ax4.get_ylim(), colors="k", linestyles="--",
-               label=f"Heart rate {hr * 60:.0f} bpm + harmonics")
+    # the heart rate wanders (58-75 bpm), so its peak is smeared over this range rather than one line
+    ax4.axvspan(40 / 60, 120 / 60, color="g", alpha=0.15, label="Heart rate, 40-120 bpm")
     ax4.set_title("Spectrum 0-5 Hz")
     ax4.legend(loc="upper right")
     for ax in (ax3, ax4):
