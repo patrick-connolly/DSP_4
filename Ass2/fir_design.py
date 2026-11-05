@@ -6,7 +6,9 @@ def design_fir(fs, stop_bands):
     # the IFFT samples the response every fs/M Hz, so fs/M has to be no wider than the
     # narrowest band, otherwise that band can fall between two bins and nothing gets removed
     df = min(hi - lo for lo, hi in stop_bands)
-    M = int(np.ceil(fs / df)) | 1  # odd so the delay (M-1)/2 is a whole number of samples
+    # odd M with a symmetric h is a type 1 linear phase filter: the only type with no forced
+    # zero at Nyquist, which the highpass needs, and the delay (M-1)/2 is a whole number of samples
+    M = int(np.ceil(fs / df)) | 1
 
     k = np.arange(M)
     f = np.minimum(k, M - k) * fs / M  # frequency of each bin, the top half mirrors the bottom
@@ -15,7 +17,7 @@ def design_fir(fs, stop_bands):
         H[(f >= lo) & (f <= hi)] = 0
 
     h = np.real(np.fft.ifft(H))
-    h = np.roll(h, M // 2)  # the peak is at index 0, move it to the middle to make it causal
+    h = np.roll(h, M // 2)  # swap the halves: negative time goes before positive time, so it is causal
     h = h * np.hamming(M)  # smooth the truncation to cut the ripple
 
     # windowing lets a little DC leak back in, which matters because the ECG offset is huge
