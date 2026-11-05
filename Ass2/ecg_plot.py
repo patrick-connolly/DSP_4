@@ -56,24 +56,22 @@ def plot_ecg(filename):
         ax.set_xlabel("Time (s)")
         ax.set_ylabel("ECG (mV)")
 
-    # full spectrum, scaled to the biggest peak above the wander band so DC and wander go off scale
+    # full spectrum scaled to the biggest peak above the wander band
     ax3.plot(f, X, lw=0.5)
     ax3.set_xlim(0, fs / 2)
     ax3.set_ylim(0, 1.2 * X[f > BASELINE[1]].max())
     ax3.axvspan(0.5, 40, color="g", alpha=0.15, label="ECG")
     ax3.axvspan(*BASELINE, color="r", alpha=0.3, label="Noise to remove")
     ax3.axvspan(*MAINS, color="r", alpha=0.3)
-    ax3.axvline(100, color="k", ls=":")
-    ax3.text(101, 0.95 * ax3.get_ylim()[1], "no 100 Hz\nharmonic", va="top")
     ax3.set_title("Spectrum")
-    ax3.legend(loc="center", bbox_to_anchor=(0.6, 0.6))  # empty gap between 50 and 100 Hz
+    
 
-    # zoom on the low end to show where the wander stops and the heartbeat starts
+    # zoom on the low shows wander stoping and the heartbeat starting
     ax4.plot(f, X)
     ax4.set_xlim(0, 5)
     ax4.set_ylim(0, 1.3 * X[(f > BASELINE[1]) & (f < 5)].max())
     ax4.axvspan(*BASELINE, color="r", alpha=0.3, label="Noise: DC + baseline wander")
-    # the heart rate wanders (58-75 bpm), so its peak is smeared over this range rather than one line
+    #heart rate wanders (58-75 bpm), so its peak is smeared over this range rather than one line
     ax4.axvspan(40 / 60, 120 / 60, color="g", alpha=0.15, label="Heart rate, 40-120 bpm")
     ax4.set_title("Spectrum 0-5 Hz")
     ax4.legend(loc="upper right")
