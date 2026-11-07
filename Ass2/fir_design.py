@@ -1,12 +1,9 @@
 import numpy as np
 
 
-def design_fir(fs, stop_bands):
-    # stop_bands is a list of (low, high) in Hz to remove. A band starting at 0 removes DC (highpass)
-    # the IFFT samples the response every fs/M Hz, so fs/M has to be no wider than the narrowest
-    # band. That is only the theoretical best: the window smears each band edge over a few bins,
-    # so we use twice as many taps to keep the heart rate fundamental (~1 Hz) out of the transition
-    df = min(hi - lo for lo, hi in stop_bands)
+def design_fir(fs, stop_bands): #list contaning freqs bins to remove
+  
+    df = min(hi - lo for lo, hi in stop_bands) # minimum width of the stop bands
     # odd M with a symmetric h is a type 1 linear phase filter: the only type with no forced
     # zero at Nyquist, which the highpass needs, and the delay (M-1)/2 is a whole number of samples
     M = int(np.ceil(2 * fs / df)) | 1
