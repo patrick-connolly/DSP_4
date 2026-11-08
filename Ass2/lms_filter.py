@@ -1,7 +1,3 @@
-"""Task 4: remove the mains with an adaptive LMS filter instead of the FIR bandstop, and compare.
-
-Run with: python3 lms_filter.py
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 from ecg_plot import MINE, BASELINE, MAINS, MAINS_HZ, load_ecg, save, spectrum, db
@@ -10,7 +6,7 @@ from fir_filter import FIRfilter
 
 fs, x = load_ecg(MINE)
 
-# the fixed FIR from task 3, to compare against
+# FIR to compare
 bandstop = FIRfilter(design_fir(fs, [BASELINE, MAINS]))
 
 # the LMS only gets a mains reference so baseline wander still needs the FIR highpass.
