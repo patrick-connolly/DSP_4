@@ -41,7 +41,7 @@ def plot_ecg(filename):
     f, X = spectrum(x, fs)
     X = X * 1000  # makes uV
 
-    # one heartbeat: R peak between 5 and 6 s, then 0.35 s before to 0.55 s after it
+    # one heartbeat
     r = 5 * fs + np.argmax(x[5 * fs:6 * fs])
     beat = slice(r - int(0.35 * fs), r + int(0.55 * fs))
 

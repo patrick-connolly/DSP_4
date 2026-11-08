@@ -9,7 +9,7 @@ def plot_design(fs, h):
     M = len(h)
     print(f"Task 2: fs = {fs} Hz, {M} taps, delay {(M - 1) / 2 / fs:.2f} s")
 
-    # impulse response and frequency response (zero padded FFT of h)
+    # impulse response and frequency response
     Nf = 16 * M
     H = np.abs(np.fft.fft(h, Nf)[:Nf // 2])
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6))
@@ -31,7 +31,7 @@ def plot_filtered(fs, x, y, M):
     delay = (M - 1) // 2
     t = np.arange(len(x)) / fs
 
-    # whole recording before and after, skipping the first M samples while the delay line fills
+    # whole recording before and after #skipping the first M samples while the delay line fills
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 9))
     ax1.plot(t, x)
     ax1.set_title("Raw ECG")
@@ -51,7 +51,7 @@ def plot_filtered(fs, x, y, M):
     fig.tight_layout()
     save(fig, "fir_realtime_ecg.pdf")
 
-    # one heartbeat, filtered output moved back by the filter delay so it lines up with the raw
+    # one heartbeat
     r = M + fs + np.argmax(np.abs(y[M + fs:M + 4 * fs]))  # an R peak in the filtered signal
     beat = np.arange(r - int(0.4 * fs), r + int(0.6 * fs))
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     h = design_fir(fs, [BASELINE, MAINS])
     plot_design(fs, h)
 
-    # feed the ECG in one sample at a time, like a realtime system would
+    # ECG in one sampple at a time
     fir = FIRfilter(h)
     y = np.array([fir.dofilter(v) for v in x])
     plot_filtered(fs, x, y, len(h))
