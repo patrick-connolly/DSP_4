@@ -1,7 +1,3 @@
-"""Tasks 2 and 3: design the FIR filter and run it over our ECG one sample at a time.
-
-Run with: python3 fir_realtime_sim.py
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 from ecg_plot import MINE, BASELINE, MAINS, load_ecg, save, spectrum, db
