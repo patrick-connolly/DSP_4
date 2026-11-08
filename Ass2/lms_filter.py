@@ -9,20 +9,18 @@ fs, x = load_ecg(MINE)
 # FIR to compare
 bandstop = FIRfilter(design_fir(fs, [BASELINE, MAINS]))
 
-# the LMS only gets a mains reference so baseline wander still needs the FIR highpass.
-# it has the same number of taps as the bandstop (set by the baseline band) so the delays match
+# Highpass for LMS
 highpass = FIRfilter(design_fir(fs, [BASELINE]))
 M = highpass.M
 
-# noise reference: a sine at the measured mains frequency.
-# one mains cycle of taps is enough to set the gain and phase of the mains sine
+# noise reference
 taps = fs // 50
 lms = FIRfilter(np.zeros(taps))
-# learning rate * taps * reference power (1/2) ~ 0.1: fast enough to follow the mains
-# drifting, slow enough to leave the ECG alone (it goes unstable around 2)
+
+# learning rate
 learning_rate = 0.1 / (taps / 2)
 
-# one sample at a time, like a realtime system would
+# main loop
 y_fir = np.zeros(len(x))
 y_lms = np.zeros(len(x))
 for n, v in enumerate(x):
@@ -31,7 +29,7 @@ for n, v in enumerate(x):
     y_lms[n] = lms.doFilterAdaptive(highpass.dofilter(v), ref, learning_rate)
 
 t = np.arange(len(x)) / fs
-r = M + fs + np.argmax(np.abs(y_fir[M + fs:M + 4 * fs]))  # an R peak to zoom in on
+r = M + fs + np.argmax(np.abs(y_fir[M + fs:M + 4 * fs]))  # a peak for zoom
 beat = slice(r - int(0.4 * fs), r + int(0.6 * fs))
 
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 9))
