@@ -1,0 +1,4 @@
+pyfirmata2>=2.5.1
+numpy
+scipy
+matplotlib
